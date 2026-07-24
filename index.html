@@ -2,7 +2,6 @@
 layout: null
 ---
 
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -215,7 +214,6 @@ layout: null
             font-size:8px;color:rgba(255,255,255,.4);display:block;margin-top:1px;
         }
 
-        /* Iklan native di dalam grid */
         .ad-native-card{
             background:transparent;border-radius:8px;
             display:flex;justify-content:center;align-items:center;
@@ -386,16 +384,41 @@ layout: null
     </nav>
 
     <!-- ==========================================
-        AMBIL 50 POSTINGAN KATEGORI "indo02"
+        AMBIL SEMUA POSTINGAN KATEGORI "indo02"
+        DINAMIS — BERAPAPUN JUMLAHNYA
         ========================================== -->
-    {% assign all_posts = site.categories['indo02'] | slice: 0, 50 %}
+    {% assign all_posts = site.categories['indo02'] %}
+    {% assign total_posts = all_posts | size %}
+
+    <!-- Hitung dinamis: minimal 1 per section kalau cukup -->
+    {% if total_posts >= 50 %}
+        {% assign trending_count = 10 %}
+        {% assign latest_count = 20 %}
+        {% assign more_count = total_posts | minus: 31 %}
+    {% elsif total_posts >= 30 %}
+        {% assign trending_count = total_posts | divided_by: 5 | at_least: 5 %}
+        {% assign latest_count = total_posts | divided_by: 2 | at_least: 10 %}
+        {% assign more_count = total_posts | minus: trending_count | minus: latest_count | minus: 1 %}
+    {% elsif total_posts >= 15 %}
+        {% assign trending_count = total_posts | divided_by: 4 | at_least: 3 %}
+        {% assign latest_count = total_posts | minus: trending_count | minus: 1 %}
+        {% assign more_count = 0 %}
+    {% elsif total_posts >= 5 %}
+        {% assign trending_count = total_posts | minus: 1 %}
+        {% assign latest_count = 0 %}
+        {% assign more_count = 0 %}
+    {% else %}
+        {% assign trending_count = total_posts | minus: 1 | at_least: 0 %}
+        {% assign latest_count = 0 %}
+        {% assign more_count = 0 %}
+    {% endif %}
 
     <!-- MAIN CONTENT -->
     <div class="main-content">
 
-        {% if all_posts.size > 0 %}
+        {% if total_posts > 0 %}
 
-        <!-- ========== HERO: POST 0 (16:9) ========== -->
+        <!-- ========== HERO: POST 0 ========== -->
         {% assign hero_post = all_posts | first %}
         <section class="hero-section">
             <article class="hero-card">
@@ -414,13 +437,16 @@ layout: null
         </section>
 
         <!-- BANNER 01 -->
+        {% if trending_count > 0 %}
         <div class="ad-banner-full">
             <div class="ad-box ad-desktop">{% include /ads/banner/01.html %}</div>
             <div class="ad-box ad-mobile">{% include /ads/banner/04.html %}</div>
         </div>
+        {% endif %}
 
-        <!-- ========== TRENDING NOW: POST 1-10 (3:4 portrait scroll) ========== -->
-        {% assign trending = all_posts | slice: 1, 10 %}
+        <!-- ========== TRENDING NOW (scroll) ========== -->
+        {% assign trending_start = 1 %}
+        {% assign trending = all_posts | slice: trending_start, trending_count %}
         {% if trending.size > 0 %}
         <div class="section-header">
             <h2><span class="icon-dot"></span> Trending Now</h2>
@@ -443,15 +469,16 @@ layout: null
                 {% endfor %}
             </div>
         </section>
-        {% endif %}
 
         <!-- BANNER 02 -->
         <div class="ad-native" style="padding:0 12px;">
             <div class="ad-box ad-both">{% include /ads/banner/02.html %}</div>
         </div>
+        {% endif %}
 
-        <!-- ========== LATEST: POST 11-30 (1:1 square grid) ========== -->
-        {% assign latest = all_posts | slice: 11, 20 %}
+        <!-- ========== LATEST (grid) ========== -->
+        {% assign latest_start = trending_start | plus: trending_count %}
+        {% assign latest = all_posts | slice: latest_start, latest_count %}
         {% if latest.size > 0 %}
         <div class="section-header">
             <h2><span class="icon-dot"></span> Latest</h2>
@@ -474,7 +501,8 @@ layout: null
                         </a>
                     </article>
                     {% assign mod = ad_pos | modulo: 5 %}
-                    {% if mod == 0 %}
+                    {% assign posts_left = latest.size | minus: ad_pos %}
+                    {% if mod == 0 and posts_left > 0 %}
                     <div class="ad-native-card">
                         <div class="ad-box ad-both">{% include /ads/banner/03.html %}</div>
                     </div>
@@ -482,15 +510,16 @@ layout: null
                 {% endfor %}
             </div>
         </section>
-        {% endif %}
 
         <!-- BANNER 08 -->
         <div class="ad-banner-full">
             <div class="ad-box ad-both">{% include /ads/banner/08.html %}</div>
         </div>
+        {% endif %}
 
-        <!-- ========== YOU MAY LIKE: POST 31-49 (3:4 portrait scroll) ========== -->
-        {% assign more = all_posts | slice: 31, 19 %}
+        <!-- ========== YOU MAY LIKE (scroll) ========== -->
+        {% assign more_start = latest_start | plus: latest_count %}
+        {% assign more = all_posts | slice: more_start, more_count %}
         {% if more.size > 0 %}
         <div class="section-header">
             <h2><span class="icon-dot"></span> You May Like</h2>
@@ -524,10 +553,12 @@ layout: null
     </div>
 
     <!-- BANNER 07: BOTTOM -->
+    {% if total_posts > 0 %}
     <div class="ad-banner-full">
         <div class="ad-box ad-desktop">{% include /ads/banner/07.html %}</div>
         <div class="ad-box ad-mobile">{% include /ads/banner/04.html %}</div>
     </div>
+    {% endif %}
 
     {% include /ads/gobloggugel/sosmed.html %}
     {% include footer.html %}
